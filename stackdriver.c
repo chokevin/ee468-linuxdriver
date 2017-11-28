@@ -35,8 +35,8 @@ struct file_operations memory_fops = {
 module_init(memory_init);
 module_exit(memory_exit);
 
-int memory_major = 61;
-char[] memory_buffer;
+int memory_major = 61; 
+char* memory_buffer;
 int memory_buff_size = 0;
 
 int memory_init(void) {
@@ -64,7 +64,7 @@ int memory_init(void) {
 
     }
 
-    memset(memory_buffer, 0, 1);
+    memset(memory_buffer, 0, 10);
 
     printk("<1>Inserting stackdriver module\n");
 
@@ -117,10 +117,13 @@ static int memory_release (struct inode *inode, struct file *filp) {
 static ssize_t memory_read(struct file *filp, char *buf, size_t count, loff_t *f_pos) {
 
     /* Transferring data to user space */
-    int i = 0;
-    while ( i < memory_buff_size ) {
-        copy_to_user(buf, memory_buffer, 1);
-    }
+    if( (int) count <= 10) {
+        copy_to_user(buf, memory_buffer+memory_buff_size- (int) count, count);
+        memory_buff_size -= (int) count;
+    } else {
+        copy_to_user(buf, memory_buffer,10);
+        memory_buff_size = 0;
+    } 
 
     /* Changing reading position as best suits... This doesn't matter? */
     if (*f_pos == 0) {
@@ -133,12 +136,15 @@ static ssize_t memory_read(struct file *filp, char *buf, size_t count, loff_t *f
 
 static ssize_t memory_write( struct file *filp, const char *buf, size_t count, loff_t *f_pos){
     const char *tmp;
-    int i;
-    int place_in_buff = 0;
-    for (i = memory_buff_size; i < 10; i++, memory_buff_size++) {
-        tmp = buf + place_in_buff;
-        copy_from_user(memory_buffer, tmp, 1);
-        place_in_buff++;
+    tmp = buf;
+    if ((int)count <= 10) { 
+        copy_from_user(memory_buffer+memory_buff_size, tmp, count);
+        memory_buff_size = memory_buff_size + (int) count;
+    } else {
+        int overflow_val = 10; 
+        copy_from_user(memory_buffer, tmp, overflow_val);
+        memory_buff_size += overflow_val;
     }
+    printk("memory buff:%d count:%d\n",memory_buff_size, count);
     return 1;
 }

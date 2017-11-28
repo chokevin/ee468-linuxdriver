@@ -25,7 +25,7 @@ char buffer_out[100];
 int i;
 char c;
 
-fp = open("/dev/memory", O_RDWR); /* Change "myDev" to your own device. */
+fp = open("/dev/stackdriver", O_RDWR); /* Change "myDev" to your own device. */
 
 read(fp,buffer_out,10); /* Clear out your device */  
 
